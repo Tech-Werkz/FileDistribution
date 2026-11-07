@@ -1,18 +1,17 @@
 {
   "name": "File Distribution",
   "shortName": "filedist",
-  "version": "0.16.0",
+  "version": "1.0.0",
   "author": "Ryan Blenis; fork maintained by Avtomax88",
-  "description": "Позволяет распространять файлы из раздела «Мои файлы» на подключённые компьютеры. Это персональная версия плагина с современным оформлением диалоговых окон и проверкой прав доступа для каждого действия.",
+  "description": "",
   "hasAdminPanel": true,
-  "homepage": "https://github.com/Avtomax88/MeshCentral-FileDistribution-Fork",
-  "changelogUrl": "https://raw.githubusercontent.com/Avtomax88/MeshCentral-FileDistribution-Fork/main/changelog.md",
-  "configUrl": "https://raw.githubusercontent.com/Avtomax88/MeshCentral-FileDistribution-Fork/main/config.json",
-  "downloadUrl": "https://github.com/Avtomax88/MeshCentral-FileDistribution-Fork/archive/main.zip",
+  "homepage": "https://github.com/Tech-Werkz/FileDistribution",
+  "changelogUrl": "https://raw.githubusercontent.com/Tech-Werkz/FileDistribution/main/changelog.md",
+  "configUrl": "https://raw.githubusercontent.com/Tech-Werkz/FileDistribution/main/config.json",
+  "downloadUrl": "https://github.com/Tech-Werkz/FileDistribution/archive/main.zip",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Avtomax88/MeshCentral-FileDistribution-Fork.git"
+    "url": "https://github.com/Tech-Werkz/FileDistribution.git"
   },
-  "versionHistoryUrl": "https://api.github.com/repos/Avtomax88/MeshCentral-FileDistribution-Fork/tags",
   "meshCentralCompat": ">=1.1.35"
 }
