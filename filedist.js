@@ -41,6 +41,32 @@ module.exports.filedist = function (parent) {
     var FULLRIGHTS = 0xFFFFFFFF;
     obj.isAdmin = function (user) { return (user != null) && (user.siteadmin == FULLRIGHTS); };
 
+    obj.registerPermissions = function () {
+        if ((obj.meshServer != null) && (obj.meshServer.pluginHandler != null) && (typeof obj.meshServer.pluginHandler.registerPermissions == 'function')) {
+            obj.meshServer.pluginHandler.registerPermissions('filedist', {
+                view: {
+                    title: 'View file distributions',
+                    desc: 'Allow the user to open the File Distribution pages and see current maps.',
+                    default: 'allowed'
+                },
+                manage: {
+                    title: 'Manage file distributions',
+                    desc: 'Allow the user to add, remove, and bulk-edit file distribution maps.',
+                    default: 'allowed'
+                }
+            });
+        }
+    };
+
+    obj.pluginPermission = function (user, permission, nodeId, meshId) {
+        if ((user == null) || (user.siteadmin == null)) { return false; }
+        if (user.siteadmin == FULLRIGHTS) { return true; }
+        if ((obj.meshServer != null) && (obj.meshServer.pluginHandler != null) && (typeof obj.meshServer.pluginHandler.checkPluginPermission == 'function')) {
+            return (obj.meshServer.pluginHandler.checkPluginPermission(user, 'filedist', permission, nodeId, meshId) === true);
+        }
+        return true;
+    };
+
     // A single global on/off switch for the My Devices button. Deliberately not
     // per-user: it changes the toolbar layout everyone sees, so only a site admin
     // may flip it, same as the rest of this admin page's write actions.
@@ -218,6 +244,7 @@ module.exports.filedist = function (parent) {
     obj.server_startup = function() {
         obj.meshServer.pluginHandler.filedist_db = require (__dirname + '/db.js').CreateDB(obj.meshServer);
         obj.db = obj.meshServer.pluginHandler.filedist_db;
+        obj.registerPermissions();
         obj.resetQueueTimer();
     };
 
@@ -374,14 +401,22 @@ module.exports.filedist = function (parent) {
         if (typeof pluginHandler.filedist.onBulkResult == 'function') pluginHandler.filedist.onBulkResult(message);
     };
 
+    obj.renderUnauthorized = function (res, message) {
+        res.status(401).render(obj.VIEWS + 'unauthorized', {
+            title: 'Access denied',
+            message: (typeof message == 'string' && message.length > 0) ? message : 'You are not authorized to access this page.'
+        });
+    };
+
     obj.handleAdminReq = function(req, res, user) {
-        if ((user == null) || (user.siteadmin == null)) { res.sendStatus(401); return; }
+        if ((user == null) || (user.siteadmin == null)) { obj.renderUnauthorized(res, 'Please sign in with an authenticated MeshCentral account.'); return; }
+        if (!obj.pluginPermission(user, 'view')) { obj.renderUnauthorized(res, 'Your account does not have permission to view file distributions.'); return; }
 
         if (req.query.user == 1) {
             // The device page asks for its own file maps. Only hand them over if
             // this user is allowed to manage that device.
             obj.userCanManageNode(user, req.query.node, function (ok) {
-                if (!ok) { res.sendStatus(401); return; }
+                if (!ok) { obj.renderUnauthorized(res, 'You do not have permission to manage this device.'); return; }
                 obj.db.getFileMapsForNode(req.query.node)
                 .then(maps => {
                     res.render(obj.VIEWS + 'user', { filemaps: JSON.stringify(maps) });
@@ -729,6 +764,10 @@ module.exports.filedist = function (parent) {
         var user = myparent.user;
         switch (command.pluginaction) {
             case 'addFileMap': {
+                if (!obj.pluginPermission(user, 'manage', command.currentNodeId)) {
+                    obj.debug('PLUGIN', PLUGIN_C, 'Refused addFileMap: no plugin permission');
+                    return;
+                }
                 if (!obj.isSafeServerPath(command.spath) || !obj.isSaneClientPath(command.cpath)) {
                     obj.debug('PLUGIN', PLUGIN_C, 'Refused addFileMap with an unusable path');
                     return;
@@ -755,6 +794,10 @@ module.exports.filedist = function (parent) {
                 break;
             }
             case 'deleteMap': {
+                if (!obj.pluginPermission(user, 'manage')) {
+                    obj.debug('PLUGIN', PLUGIN_C, 'Refused deleteMap: no plugin permission');
+                    return;
+                }
                 // The node is taken from the stored map, not from the message, so a
                 // caller cannot name a node they do have rights on to delete a map
                 // belonging to one they do not.
@@ -789,6 +832,10 @@ module.exports.filedist = function (parent) {
                 break;
             }
             case 'getOverview': {
+                if (!obj.pluginPermission(user, 'view')) {
+                    obj.replyToUser(user, 'overviewData', { maps: [], error: 'You do not have permission to view this plugin.' });
+                    return;
+                }
                 obj.db.getServerFiles()
                 .then(function (maps) {
                     obj.filterMapsByRights(user, maps, function (allowed) {
@@ -805,6 +852,10 @@ module.exports.filedist = function (parent) {
                 break;
             }
             case 'addFileMapBulk': {
+                if (!obj.pluginPermission(user, 'manage')) {
+                    obj.replyToUser(user, 'bulkResult', { kind: 'add', result: { added: 0, skipped: 0, error: 'You do not have permission to manage this plugin.' } });
+                    return;
+                }
                 // Newer clients send items[]; a single spath/cpath is still accepted.
                 var items = command.items;
                 if (!Array.isArray(items)) { items = [{ spath: command.spath, cpath: command.cpath }]; }
@@ -814,6 +865,10 @@ module.exports.filedist = function (parent) {
                 break;
             }
             case 'deleteMapsBulk': {
+                if (!obj.pluginPermission(user, 'manage')) {
+                    obj.replyToUser(user, 'bulkResult', { kind: 'delete', result: { removed: 0, skipped: 0, error: 'You do not have permission to manage this plugin.' } });
+                    return;
+                }
                 obj.bulkDeleteMaps(user, command.ids, (command.deleteFile === true), function (res) {
                     obj.replyToUser(user, 'bulkResult', { kind: 'delete', result: res });
                 });
@@ -841,6 +896,10 @@ module.exports.filedist = function (parent) {
                 break;
             }
             case 'getUiConfig': {
+                if (!obj.pluginPermission(user, 'view')) {
+                    obj.replyToUser(user, 'uiConfig', { config: { devicesButton: false }, canManageUi: false });
+                    return;
+                }
                 // Uses the same dispatch path as the rest of this plugin's replies,
                 // which is the one known to reach the browser here.
                 obj.loadUiConfig(function (cfg) {

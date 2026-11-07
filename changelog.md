@@ -1,215 +1,121 @@
 # Changelog
 
-Форк [meshcentral-community/MeshCentral-FileDistribution](https://github.com/meshcentral-community/MeshCentral-FileDistribution),
-созданный для личного использования.
+Fork of [meshcentral-community/MeshCentral-FileDistribution](https://github.com/meshcentral-community/MeshCentral-FileDistribution),
+created for personal use.
 
-Формат основан на [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [Unreleased]
+
+### Added
+- **Plugin permissions in the MeshCentral permissions dialog.** The plugin now registers its permissions in the plugin permissions panel (MeshCentral 1.1.58+), and full site administrators always pass every check.
 
 ## [0.16.0]
 
-### Добавлено
-- **Шкала загрузки прямо в метке устройства.** Пока файл идёт на устройство,
-  его метка заполняется зелёным слева направо и показывает процент. Когда файл
-  доставлен, метка становится полностью зелёной — тот же вид, что и раньше.
-- В свёрнутой строке раздачи видно, сколько устройств принимает файл сейчас и
-  на сколько процентов в среднем, — не раскрывая список.
-- Пока файл действительно передаётся, обзор обновляется раз в 1,2 секунды
-  вместо пяти, чтобы шкала двигалась плавно. Как только передача закончилась,
-  частота возвращается к прежней.
+### Added
+- **Progress bar directly in the device label.** While a file is being sent to a device, the label fills green from left to right and shows the percentage. When the file is delivered, the label becomes fully green — the same look as before.
+- In the collapsed distribution row, it is now visible how many devices are currently receiving the file and the average percentage, without expanding the list.
+- While a file is actually being transferred, the overview refreshes every 1.2 seconds instead of five, so the progress bar moves smoothly. Once the transfer ends, the refresh rate returns to normal.
 
-### Как это считается
-Прогресс берётся с сервера, а не с устройства: сервер сам пацит передачу и
-знает, сколько байт отправил. Поэтому агентский модуль не изменился и
-обновление ядер не требуется. Значение хранится только в памяти сервера, в базу
-не пишется, и исчезает сразу по окончании передачи.
+### How this is calculated
+The progress is taken from the server, not from the device: the server tracks the transfer itself and knows how many bytes it has sent. Because of that, the agent module did not change and no kernel update is required. The value is stored only in server memory, not in the database, and disappears as soon as the transfer ends.
 
-Шкала показывает отправленное сервером, а подтверждение доставки по-прежнему
-приходит от устройства после сверки размера. То есть 100% на шкале означает
-«сервер всё отправил», а зелёная метка без шкалы — «файл на диске целиком».
+The bar shows what the server has sent, while delivery confirmation still comes from the device after it verifies the file size. So 100% on the bar means “the server sent everything,” while the green label without a bar means “the file is fully present on disk.”
 
 ## [0.15.1]
 
-### Исправлено
-- Строки в «Текущих раздачах» не разворачивались. Раздача опознаётся по ключу
-  из двух путей, склеенных нулевым байтом, и этот ключ передавался через
-  атрибут разметки — а нулевой байт такой передачи не переживает, поэтому
-  прочитанное значение никогда не совпадало с исходным. Теперь в атрибут идёт
-  номер строки, а ключ берётся из уже построенного списка раздач.
+### Fixed
+- Rows in the “Current distributions” list did not expand. A distribution is identified by a key built from two paths joined by a null byte, and that key was passed through a markup attribute — but a null byte is not preserved in that transfer, so the value never matched the original. The attribute now carries the row number, and the key is read from the already built list of distributions.
 
 ## [0.15.0]
 
-### Добавлено
-- Раздел «Текущие раздачи» по умолчанию подстраивает высоту под содержимое.
-  Как только его потянули за угол, высота становится заданной и запоминается.
-- Каждая раздача свёрнута в одну строку. В столбце «Устройства» видно, сколько
-  из скольких доставлено, а при наличии ошибок — сколько не доставлено.
-  Раскрывается щелчком по треугольнику или по этой же ячейке; раскрытые строки
-  запоминаются в браузере и переживают автообновление.
-- В дереве «Мои файлы» у каждого файла показано, раздаётся он или нет. У папки
-  указано, сколько файлов внутри участвует в раздачах.
+### Added
+- The “Current distributions” section now adjusts its height to fit the content by default. Once it is dragged by the corner, the height becomes fixed and is remembered.
+- Each distribution is collapsed into a single row. In the “Devices” column, you can see how many of how many were delivered, and if there are errors, how many were not delivered. It expands by clicking the triangle or the same cell; expanded rows are remembered in the browser and survive auto-refresh.
+- In the “My Files” tree, each file shows whether it is being distributed. For folders, it shows how many files inside participate in distributions.
 
-### Примечание
-Признак обновляется вместе с обзором раздач, в том числе автоматически, пока
-файлы в пути. Выбор файлов и раскрытые папки при этом сохраняются.
+### Note
+The flag is updated together with the distribution overview, including automatically while files are still in the path. The selected files and expanded folders are preserved.
 
 ## [0.14.2]
 
-### Исправлено
-- **Состояния доставки не сохранялись, в логе сервера была ошибка
-  `Update document requires atomic operators`.** Запись состояния обращалась к
-  драйверу MongoDB напрямую, минуя обёртку, которая оборачивает поля в `$set`.
-  MongoDB такое обновление отвергает. Теперь вызов идёт через ту же обёртку,
-  что и остальные обновления.
-- Запись состояния дополнительно защищена перехватом: драйвер может сообщить
-  об ошибке броском, а не отклонённым обещанием, и тогда обычная обработка до
-  неё не доходит. Сбой записи состояния больше не может помешать работе
-  плагина.
+### Fixed
+- **Delivery states were not being saved, and the server log showed `Update document requires atomic operators`.** The state write went directly to the MongoDB driver, bypassing the wrapper that wraps fields in `$set`. MongoDB rejects this update. The call now goes through the same wrapper used by the rest of the plugin.
+- State writing is also protected by a try/catch: the driver can report an error by throwing instead of returning a rejected promise, and in that case the normal handling never runs. A state write failure can no longer break the plugin.
 
 ## [0.14.1]
 
-### Изменено
-- Раскрытые папки запоминаются в браузере и восстанавливаются после раздачи и
-  после перезагрузки страницы.
-- Папка опознаётся по своему пути, а не по порядковому номеру. Номер сдвигался
-  при добавлении или удалении файлов в «Моих файлах», из-за чего после таких
-  изменений раскрывались не те папки.
+### Changed
+- Expanded folders are remembered in the browser and restored after distribution and after page reload.
+- A folder is identified by its path instead of its index. The index shifted when files were added or removed in “My Files,” causing the wrong folders to expand after those changes.
 
 ## [0.14.0]
 
-### Добавлено
-- **Файлы из «Мои файлы» показаны деревом папок**, а не плоским списком полных
-  путей. Рядом с именем папки указано, сколько файлов в ней вместе с
-  вложенными.
-- Отметка папки выбирает все файлы внутри неё, включая вложенные папки на
-  любую глубину. Снятие отметки убирает только их.
-- Флажок папки отражает содержимое: отмечен, когда выбрано всё внутри, и
-  показан промежуточным, когда выбрана лишь часть.
-- Ссылки «Раскрыть все» и «Свернуть все». По умолчанию папки свёрнуты, чтобы
-  длинный список не занимал весь блок.
+### Added
+- **Files from “My Files” are shown as a folder tree**, rather than a flat list of full paths. Next to each folder name, the number of files in it, including nested ones, is shown.
+- Selecting a folder selects all files inside it, including nested folders at any depth. Clearing the selection removes only those files.
+- The folder checkbox reflects the contents: checked when everything inside is selected, and shown as intermediate when only part is selected.
+- Links for “Expand all” and “Collapse all.” By default, folders are collapsed so a long list does not take over the whole block.
 
-### Исправлено
-- Под списком файлов отображался литерал `\n` — остаток от неверно вставленной
-  разметки.
+### Fixed
+- The literal `\n` appeared under the file list — a leftover from an incorrectly inserted markup string.
 
 ## [0.13.0]
 
-### Добавлено
-- **В «Текущих раздачах» видно, доставлен ли файл на каждое устройство.**
-  Метка устройства окрашивается: зелёная — файл доставлен и подтверждён самим
-  устройством, синяя — передаётся сейчас, серая — ожидает отправки, красная —
-  не доставлен. Наведение показывает пояснение и подробности.
-- Рядом с числом устройств теперь написано, на скольких из них файл уже
-  доставлен: «доставлено 13 из 16». По этой строке удобно понимать, когда
-  можно запускать следующую порцию раздачи.
-- Пока что-то в пути, обзор обновляется сам каждые пять секунд и перестаёт,
-  как только все устройства подтвердили доставку.
+### Added
+- **In “Current distributions,” it is visible whether each file was delivered to each device.** The device label is colored: green — the file was delivered and confirmed by the device itself, blue — currently being transferred, gray — waiting to be sent, red — not delivered. Hovering shows an explanation and details.
+- Next to the number of devices, it now shows how many of them already received the file: “delivered 13 of 16.” This makes it easier to judge when the next batch can be started.
+- While something is in the path, the overview refreshes automatically every five seconds and stops once all devices have confirmed delivery.
 
-### Как это определяется
-- Подтверждение приходит от агента, а не от сервера: устройство сообщает об
-  успехе только после того, как сверило размер полученного файла с ожидаемым.
-  То есть зелёный означает «файл лежит на диске целиком», а не «сервер
-  закончил отправку».
-- Периодическая проверка раз в 20 минут подтверждает состояние повторно,
-  поэтому раздачи, созданные до этой версии, тоже постепенно окрасятся, а
-  файл, удалённый на устройстве вручную, перестанет считаться доставленным.
+### How this is determined
+- Confirmation comes from the agent, not the server: the device reports success only after verifying the size of the received file against the expected value. So green means “the file is fully on disk,” not “the server finished sending it.”
+- A periodic check every 20 minutes confirms the state again, so distributions created before this version will gradually be colored as well, and a file deleted manually on the device will stop being counted as delivered.
 
 ## [0.12.0]
 
-### Исправлено — важно
-- **Сервер MeshCentral мог быть убит системой из-за нехватки памяти при
-  раздаче крупных файлов на несколько машин.** Передача, унаследованная от
-  оригинала, читала файл потоком и складывала каждый кусок прямо в сокет
-  агента без какого-либо контроля. Диск быстрый, сеть медленная, поэтому всё
-  непереданное копилось в памяти, а кодирование в hex удваивало объём: 61 МБ
-  на десять машин — это свыше гигабайта в очередях одновременно.
-- Передачи теперь становятся в очередь, одновременно выполняются две, и
-  очередной кусок читается только после того, как сокет разгрузился. Если
-  версия MeshCentral не сообщает заполненность сокета, применяется
-  фиксированный темп — объём в памяти ограничен в обоих случаях.
-- Передача прекращается сразу, как только агент отключился, и очередь при
-  этом продолжает работу.
-- Повторный запрос того же файла на то же устройство, пока передача идёт или
-  ждёт в очереди, игнорируется.
+### Fixed — important
+- **The MeshCentral server could be killed by the system due to memory exhaustion while distributing large files to multiple machines.** The transfer inherited from the original project read the file as a stream and pushed each chunk directly into the agent socket without any control. The disk is fast, the network is slow, so all unsent data accumulated in memory, and hex encoding doubled the size: 61 MB to ten machines meant well over a gigabyte queued at once.
+- Transfers are now queued, only two run at a time, and the next chunk is read only after the socket has drained. If the MeshCentral version does not report socket depth, a fixed pace is used; the amount of memory used is limited in both cases.
+- Transfer stops immediately when the agent disconnects, and the queue continues to work.
+- A repeated request for the same file to the same device is ignored while the transfer is ongoing or waiting in the queue.
 
-### Измерено
-На модели: файл 6 МБ на десять машин. Прежний подход держал в памяти около
-120 МБ, новый — 4,3 МБ при том же объёме переданных данных. Потребление
-теперь почти не зависит от размера файла и числа машин.
+### Measured
+On a sample: a 6 MB file sent to ten machines. The old approach kept around 120 MB in memory; the new one keeps about 4.3 MB for the same volume of transferred data. Memory usage is now almost independent of file size and the number of machines.
 
 ## [0.11.0]
 
-### Добавлено
-- **Каталог назначения создаётся на устройстве, если его нет.** Раньше раздача
-  в несуществующую папку просто не удавалась: запись падала, и в логе
-  оставалось лишь `write failed`.
-- Создаётся вся недостающая вложенность, а не один уровень: для
-  `C:\install\deep\nested` будут созданы все три папки.
-- Каталог готовится заранее, при получении раздачи, а не в момент записи
-  первого куска. Это важно для случая, когда в агенте нет `mkdirSync` и
-  приходится звать системную команду: она асинхронная, и запас времени даёт
-  обращение к серверу за файлом.
-- Перед самой записью наличие каталога проверяется ещё раз. Если его всё же
-  нет, передача прекращается с понятной причиной в отчёте вместо ошибки
-  записи.
+### Added
+- **The destination directory is created on the device if it does not exist.** Previously, sending to a non-existent folder simply failed: the write crashed, and the log only showed `write failed`.
+- The entire missing hierarchy is created, not just one level: for `C:\install\deep\nested`, all three folders are created.
+- The directory is prepared ahead of time when the distribution is received, rather than at the moment the first chunk is written. This matters when the agent does not have `mkdirSync` and must call a system command instead: it is asynchronous, and the extra time comes from fetching the file from the server.
+- Right before the actual write, the directory presence is checked again. If it is still missing, the transfer stops with a clear reason in the report instead of a write error.
 
-### Особенности
-- Сетевые пути обрабатываются корректно: `\\сервер\шара` не трогается,
-  создаются только вложенные папки внутри шары.
-- Отказ в правах на создание папки не роняет модуль: причина пишется в лог, и
-  делается запасная попытка системной командой.
+### Notes
+- Network paths are handled correctly: `\\server\share` is left alone, and only nested folders inside the share are created.
+- A failure to gain permission to create the folder does not crash the module: the reason is written to the log, and a fallback attempt is made with a system command.
 
 ## [0.10.7]
 
-### Исправлено
-- **Кнопка на «Мои устройства» пропадала после обычного обновления страницы.**
-  Настоящая причина иная, чем предполагалось в 0.10.6. Плагин при старте
-  запрашивал у сервера, показывать ли кнопку, и вставлял её только по ответу.
-  При обновлении страницы запрос мог уйти раньше, чем установится соединение
-  с сервером, и пропасть — ответа не было, кнопки тоже. «Сохранить» помогало,
-  потому что к тому моменту соединение уже было.
-- Теперь последнее известное значение настройки хранится в браузере, и кнопка
-  показывается сразу при загрузке, без ожидания сервера — так же, как это
-  делает Quick Commands. Запрос к серверу повторяется, пока не придёт ответ,
-  и ответ при необходимости корректирует состояние кнопки.
+### Fixed
+- **The button on “My Devices” disappeared after a normal page refresh.** The actual cause was different from what was assumed in 0.10.6. On startup, the plugin asked the server whether to show the button and inserted it only after receiving the answer. During a page refresh, the request could be sent before the connection to the server was ready, and the answer never arrived, so the button never appeared. “Save” helped because by then the connection was already established.
+- The last known setting is now stored in the browser, and the button appears immediately on load without waiting for the server — the same way Quick Commands does it. Requests to the server are retried until a response arrives, and if needed the response corrects the button state.
 
-### Об исправлении в 0.10.6
-Предположение о том, что MeshCentral перестраивает панель инструментов,
-опроверг код Quick Commands: он вставляет кнопку один раз и никогда её не
-восстанавливает, а она при этом не пропадает. Наблюдатель за разметкой из
-0.10.6 оставлен как страховка: он ничему не мешает и обходится одной
-проверкой по идентификатору на серию изменений.
+### About the fix in 0.10.6
+The assumption that MeshCentral rebuilds the toolbar was disproved by the Quick Commands code: it inserts the button once and never restores it, yet it still does not disappear. The observer from 0.10.6 remains as a safeguard: it does not interfere and costs only one ID lookup per batch of changes.
 
 ## [0.10.6]
 
-### Исправлено
-- **Кнопка раздачи пропадала с панели «Мои устройства».** MeshCentral
-  перестраивает панель инструментов при смене вида, фильтра или страницы, и
-  кнопка уничтожалась вместе со старой разметкой. Вставка при этом
-  выполнялась один раз и помечалась флагом, поэтому повторно кнопка не
-  появлялась до перезагрузки страницы. «Сохранить» в настройках помогало
-  лишь потому, что после него страницу обновляли.
-  Теперь вставка ориентируется на то, есть ли кнопка на странице на самом
-  деле, а наблюдатель за разметкой возвращает её после каждой перестройки
-  панели. Изменения разметки собираются в одну проверку, чтобы не нагружать
-  страницу.
-- Выключение кнопки в настройках теперь убирает её сразу, без перезагрузки.
-- Состояние «доступна / недоступна» теперь отслеживается у актуальной кнопки
-  групповых действий, а не у той, что была до перестройки панели.
+### Fixed
+- **The distribution button disappeared from the “My Devices” panel.** MeshCentral rebuilds the toolbar when the view, filter, or page changes, and the button was destroyed along with the old markup. The insertion happened only once and was marked with a flag, so the button did not reappear until the page was reloaded. “Save” in the settings only helped because users refreshed the page after that.
+  The insertion now checks whether the button is actually present on the page, and a markup observer restores it after each toolbar rebuild. The markup change checks are grouped into a single pass to avoid overloading the page.
+- Turning the button off in the settings now removes it immediately, without reloading.
+- The “enabled / disabled” state is now tracked against the current group-action button instead of the one that existed before the toolbar was rebuilt.
 
 ## [0.10.5]
 
-### Исправлено
-- **Распаковка не запускалась, хотя флаг доходил и файл приходил целым.**
-  Вызов был отложен через `setTimeout`, а в среде агента таймер, на который
-  никто не держит ссылку, может быть собран сборщиком мусора до срабатывания —
-  поэтому не появлялось ни одной записи в логе. Показательно, что оригинальный
-  код хранит свой периодический таймер в переменной модуля именно по этой
-  причине. Отложенный вызов убран: после исправления запуска процессов в 0.10.1
-  он больше не нужен, файл к этому моменту уже записан и поток закрыт, а сама
-  процедура распаковки защищена собственным перехватом ошибок.
-- В `filedist.txt` теперь видно, что именно сохранено для каждой раздачи
-  (`stored map ... unzip=true`) и с каким значением флага подошла проверка
-  перед распаковкой.
+### Fixed
+- **Unpacking did not start even though the flag was received and the file arrived intact.** The call was deferred via `setTimeout`, and in the agent environment a timer that nobody keeps a reference to can be garbage-collected before firing — so no log entry ever appeared. It is telling that the original code stores its periodic timer in a module variable for exactly this reason. The deferred call was removed: after the process launch fix in 0.10.1 it was no longer needed, the file was already written and the stream was closed, and the unpacking procedure itself is protected by its own error handling.
+- In `filedist.txt`, it is now clear exactly what was saved for each distribution (`stored map ... unzip=true`) and which flag value passed the check before unpacking.
 
 ## [0.10.4]
 

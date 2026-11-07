@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{title}}</title>
+  <style>
+    :root {
+      --page-bg: transparent;
+      --header-border: rgba(0, 0, 0, 0.35);
+      --panel-bg: rgba(173, 220, 234, 0.72);
+      --panel-border: rgba(80, 140, 170, 0.8);
+      --text: #111111;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+    }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      height: 30px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--header-border);
+      background: transparent;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #111;
+    }
+
+    .content {
+      width: 100%;
+      padding-top: 48px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .message-box {
+      width: min(80vw, 820px);
+      min-height: 74px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 26px;
+      text-align: center;
+      box-shadow: none;
+    }
+
+    .message {
+      margin: 0;
+      font-size: clamp(1.03rem, 1.8vw, 1.65rem);
+      line-height: 1.4;
+      color: var(--text);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div class="message-box" role="alert" aria-live="polite">
+      <p class="message">{{message}}</p>
+    </div>
+  </div>
+</body>
+</html>
