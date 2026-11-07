@@ -1,16 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{title}}</title>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var host = null;
+      try { if (window.parent !== window && window.parent.document) host = window.parent; } catch (e) { host = null; }
+
+      var link = document.createElement('link');
+      link.id = 'theme-stylesheet';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+
+      function hostThemeLink() { return host ? host.document.getElementById('theme-stylesheet') : null; }
+
+      function standaloneMode() {
+        var n = '0';
+        try { n = localStorage.getItem('nightMode') || '0'; } catch (e) { }
+        if (n == '1') return 'dark';
+        if (n == '2') return 'light';
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+
+      function standaloneHref() {
+        var t = 'default';
+        try { t = localStorage.getItem('theme') || 'default'; } catch (e) { }
+        if (!/^[a-z0-9_-]+$/i.test(t) || t == 'default') return 'styles/bootstrap-min.css';
+        return 'styles/themes/' + encodeURIComponent(t.toLowerCase()) + '/bootstrap-min.css';
+      }
+
+      function apply() {
+        var href, mode;
+        var hl = hostThemeLink();
+        if (host && hl) {
+          href = hl.href;
+          mode = host.document.documentElement.getAttribute('data-bs-theme') || 'light';
+          root.removeAttribute('data-st-classic');
+        } else if (host) {
+          href = 'styles/bootstrap-min.css';
+          mode = (host.document.body && host.document.body.classList.contains('night')) ? 'dark' : 'light';
+          root.setAttribute('data-st-classic', '1');
+        } else {
+          href = standaloneHref();
+          mode = standaloneMode();
+        }
+        if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+        if (root.getAttribute('data-bs-theme') !== mode) root.setAttribute('data-bs-theme', mode);
+      }
+
+      apply();
+
+      if (host) {
+        var observer = new MutationObserver(apply);
+        observer.observe(host.document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+        var hl = hostThemeLink();
+        if (hl) observer.observe(hl, { attributes: true, attributeFilter: ['href'] });
+        if (host.document.body) observer.observe(host.document.body, { attributes: true, attributeFilter: ['class'] });
+        window.addEventListener('pagehide', function () { observer.disconnect(); });
+      } else {
+        window.addEventListener('storage', apply);
+        if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+      }
+    })();
+  </script>
   <style>
     :root {
-      --page-bg: transparent;
-      --header-border: rgba(0, 0, 0, 0.35);
-      --panel-bg: rgba(173, 220, 234, 0.72);
-      --panel-border: rgba(80, 140, 170, 0.8);
-      --text: #111111;
+      --fd-page-bg: var(--bs-body-bg);
+      --fd-panel-bg: var(--bs-tertiary-bg);
+      --fd-panel-border: var(--bs-border-color);
+      --fd-panel-text: var(--bs-body-color);
+      --fd-danger-bg: var(--bs-danger-bg-subtle);
+      --fd-danger-border: var(--bs-danger-border-subtle);
+      --fd-danger-text: var(--bs-danger-text-emphasis);
     }
 
     * { box-sizing: border-box; }
@@ -18,66 +82,56 @@
     html, body {
       margin: 0;
       width: 100%;
-      height: 100%;
+      min-height: 100%;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--page-bg);
-      color: var(--text);
+      background: var(--fd-page-bg);
+      color: var(--fd-panel-text);
     }
 
     body {
       min-height: 100vh;
-      overflow: hidden;
-    }
-
-    .topbar {
-      height: 30px;
-      padding: 0 14px;
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid var(--header-border);
-      background: transparent;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      color: #111;
-    }
-
-    .content {
-      width: 100%;
-      padding-top: 48px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .message-box {
-      width: min(80vw, 820px);
-      min-height: 74px;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 2px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 18px 26px;
-      text-align: center;
-      box-shadow: none;
+      padding: 2rem;
     }
 
-    .message {
+    .fd-alert {
+      width: min(38rem, 100%);
+      background: var(--fd-danger-bg);
+      border: 1px solid var(--fd-danger-border);
+      color: var(--fd-danger-text);
+      border-radius: var(--bs-border-radius);
+      box-shadow: var(--bs-box-shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.25rem;
+      font-size: clamp(1rem, 1.4vw, 1.15rem);
+      line-height: 1.45;
+    }
+
+    .fd-alert-icon {
+      flex: none;
+      width: 1.25rem;
+      height: 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      opacity: .9;
+    }
+
+    .fd-alert-message {
       margin: 0;
-      font-size: clamp(1.03rem, 1.8vw, 1.65rem);
-      line-height: 1.4;
-      color: var(--text);
-      font-weight: 400;
-      letter-spacing: -0.01em;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <div class="content">
-    <div class="message-box" role="alert" aria-live="polite">
-      <p class="message">{{message}}</p>
-    </div>
+  <div class="fd-alert" role="alert" aria-live="assertive">
+    <span class="fd-alert-icon" aria-hidden="true">⚠</span>
+    <p class="fd-alert-message">{{message}}</p>
   </div>
 </body>
 </html>

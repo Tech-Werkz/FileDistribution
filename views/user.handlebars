@@ -2,16 +2,98 @@
 <head>
     <script type="text/javascript" src="scripts/common-0.0.1.js"></script>
     <script type="text/javascript" src="pluginadmin.ashx?pin=filedist&include=1&path=fdlang.js"></script>
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var host = null;
+            try { if (window.parent !== window && window.parent.document) host = window.parent; } catch (e) { host = null; }
+
+            var link = document.createElement('link');
+            link.id = 'theme-stylesheet';
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+
+            function hostThemeLink() { return host ? host.document.getElementById('theme-stylesheet') : null; }
+            function standaloneMode() {
+                var n = '0';
+                try { n = localStorage.getItem('nightMode') || '0'; } catch (e) { }
+                if (n == '1') return 'dark';
+                if (n == '2') return 'light';
+                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            function standaloneHref() {
+                var t = 'default';
+                try { t = localStorage.getItem('theme') || 'default'; } catch (e) { }
+                if (!/^[a-z0-9_-]+$/i.test(t) || t == 'default') return 'styles/bootstrap-min.css';
+                return 'styles/themes/' + encodeURIComponent(t.toLowerCase()) + '/bootstrap-min.css';
+            }
+            function apply() {
+                var href, mode;
+                var hl = hostThemeLink();
+                if (host && hl) {
+                    href = hl.href;
+                    mode = host.document.documentElement.getAttribute('data-bs-theme') || 'light';
+                    root.removeAttribute('data-st-classic');
+                } else if (host) {
+                    href = 'styles/bootstrap-min.css';
+                    mode = (host.document.body && host.document.body.classList.contains('night')) ? 'dark' : 'light';
+                    root.setAttribute('data-st-classic', '1');
+                } else {
+                    href = standaloneHref();
+                    mode = standaloneMode();
+                }
+                if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+                if (root.getAttribute('data-bs-theme') !== mode) root.setAttribute('data-bs-theme', mode);
+            }
+            apply();
+            if (host) {
+                var observer = new MutationObserver(apply);
+                observer.observe(host.document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+                var hl = hostThemeLink();
+                if (hl) observer.observe(hl, { attributes: true, attributeFilter: ['href'] });
+                if (host.document.body) observer.observe(host.document.body, { attributes: true, attributeFilter: ['class'] });
+                window.addEventListener('pagehide', function () { observer.disconnect(); });
+            } else {
+                window.addEventListener('storage', apply);
+                if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+            }
+        })();
+    </script>
 </head>
 <style>
+    :root {
+        --fd-bg: var(--bs-body-bg, #ffffff);
+        --fd-surface: var(--bs-tertiary-bg, #f8f9fa);
+        --fd-surface-strong: var(--bs-secondary-bg, #e9ecef);
+        --fd-border: var(--bs-border-color, #d8d8d8);
+        --fd-text: var(--bs-body-color, #212529);
+        --fd-muted: var(--bs-secondary-color, #6c757d);
+        --fd-hover: var(--bs-tertiary-bg, #eef4fb);
+        --fd-selected: var(--bs-primary-bg-subtle, #dceaf7);
+        --fd-selected-text: var(--bs-primary-text-emphasis, #0d6efd);
+        --fd-danger: var(--bs-danger-text-emphasis, #7a2020);
+        --fd-shadow: rgba(0, 0, 0, 0.2);
+        --fd-success-bg: var(--bs-success-bg-subtle, #eaf6ea);
+        --fd-success-border: var(--bs-success-border-subtle, #a6d2a6);
+        --fd-success-text: var(--bs-success-text-emphasis, #20521f);
+        --fd-warning-bg: var(--bs-warning-bg-subtle, #fff3cd);
+        --fd-warning-border: var(--bs-warning-border-subtle, #ffecb5);
+        --fd-warning-text: var(--bs-warning-text-emphasis, #664d03);
+    }
+
+    html, body {
+        background: var(--fd-bg);
+        color: var(--fd-text);
+    }
     body { font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size: 13px; margin: 0; padding: 4px; }
+    a { color: var(--bs-link-color, #0d6efd); }
     #fdMaps { width: 100%; border-collapse: collapse; }
-    #fdMaps th { text-align: left; padding: 5px 6px; border-bottom: 2px solid #b3b3b3; }
-    #fdMaps td { padding: 4px 6px; border-bottom: 1px solid #dcdcdc; word-break: break-all; }
+    #fdMaps th { text-align: left; padding: 5px 6px; border-bottom: 2px solid var(--fd-border); background: var(--fd-surface); }
+    #fdMaps td { padding: 4px 6px; border-bottom: 1px solid var(--fd-border); word-break: break-all; }
     #goAdd, .delMap { cursor: pointer; }
     #goAdd { display: inline-block; padding: 6px 2px; font-weight: bold; }
-    .delMap { color: #b03030; font-weight: bold; }
-    #fdEmpty { color: #666; padding: 10px 6px; }
+    .delMap { color: var(--fd-danger); font-weight: bold; }
+    #fdEmpty { color: var(--fd-muted); padding: 10px 6px; }
 
     /* Own dialog. The host page's setDialogMode() exists in the modern theme but
        does not render, and parent.currentNode is out of reach from this frame, so
@@ -19,18 +101,18 @@
     #fdOverlay { display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0;
                  background: rgba(0,0,0,0.35); z-index: 1000; }
     #fdDlg { position: absolute; left: 50%; top: 40px; transform: translateX(-50%);
-             background: #fff; border: 1px solid #808080; box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+             background: var(--fd-bg); border: 1px solid var(--fd-border); box-shadow: 0 4px 18px var(--fd-shadow);
              min-width: 420px; max-width: 90%; }
-    #fdDlgHead { background: #f0f0f0; border-bottom: 1px solid #d0d0d0; padding: 7px 10px; font-weight: bold; }
+    #fdDlgHead { background: var(--fd-surface); border-bottom: 1px solid var(--fd-border); padding: 7px 10px; font-weight: bold; }
     #fdDlgBody { padding: 10px; max-height: 60vh; overflow: auto; }
-    #fdDlgFoot { padding: 8px 10px; text-align: right; border-top: 1px solid #e0e0e0; }
+    #fdDlgFoot { padding: 8px 10px; text-align: right; border-top: 1px solid var(--fd-border); }
     #fdDlgFoot input { margin-left: 6px; padding: 3px 14px; }
     .fdfh { padding: 3px 4px; cursor: pointer; }
-    .fdfh:hover { background: #eef4fb; }
-    .fdfh.sel { font-weight: bold; background: #dceaf7; }
-    #fdFileList { max-height: 300px; overflow: auto; border: 1px solid #d8d8d8; margin-bottom: 8px; }
-    #fdErr { color: #7a2020; padding: 6px 0; display: none; }
-    .fdInput { width: 100%; box-sizing: border-box; padding: 4px; }
+    .fdfh:hover { background: var(--fd-hover); }
+    .fdfh.sel { font-weight: bold; background: var(--fd-selected); color: var(--fd-selected-text); }
+    #fdFileList { max-height: 300px; overflow: auto; border: 1px solid var(--fd-border); margin-bottom: 8px; }
+    #fdErr { color: var(--fd-danger); padding: 6px 0; display: none; }
+    .fdInput { width: 100%; box-sizing: border-box; padding: 4px; background: var(--fd-bg); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--bs-border-radius, 0.375rem); }
 </style>
 <body onload="doOnLoad();">
 <div id="fileDistUser">

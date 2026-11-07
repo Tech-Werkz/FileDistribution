@@ -2,12 +2,93 @@
 <head>
     <script type="text/javascript" src="scripts/common-0.0.1.js"></script>
     <script type="text/javascript" src="pluginadmin.ashx?pin=filedist&include=1&path=fdlang.js"></script>
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var host = null;
+            try { if (window.parent !== window && window.parent.document) host = window.parent; } catch (e) { host = null; }
+
+            var link = document.createElement('link');
+            link.id = 'theme-stylesheet';
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+
+            function hostThemeLink() { return host ? host.document.getElementById('theme-stylesheet') : null; }
+            function standaloneMode() {
+                var n = '0';
+                try { n = localStorage.getItem('nightMode') || '0'; } catch (e) { }
+                if (n == '1') return 'dark';
+                if (n == '2') return 'light';
+                return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            function standaloneHref() {
+                var t = 'default';
+                try { t = localStorage.getItem('theme') || 'default'; } catch (e) { }
+                if (!/^[a-z0-9_-]+$/i.test(t) || t == 'default') return 'styles/bootstrap-min.css';
+                return 'styles/themes/' + encodeURIComponent(t.toLowerCase()) + '/bootstrap-min.css';
+            }
+            function apply() {
+                var href, mode;
+                var hl = hostThemeLink();
+                if (host && hl) {
+                    href = hl.href;
+                    mode = host.document.documentElement.getAttribute('data-bs-theme') || 'light';
+                    root.removeAttribute('data-st-classic');
+                } else if (host) {
+                    href = 'styles/bootstrap-min.css';
+                    mode = (host.document.body && host.document.body.classList.contains('night')) ? 'dark' : 'light';
+                    root.setAttribute('data-st-classic', '1');
+                } else {
+                    href = standaloneHref();
+                    mode = standaloneMode();
+                }
+                if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+                if (root.getAttribute('data-bs-theme') !== mode) root.setAttribute('data-bs-theme', mode);
+            }
+            apply();
+            if (host) {
+                var observer = new MutationObserver(apply);
+                observer.observe(host.document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+                var hl = hostThemeLink();
+                if (hl) observer.observe(hl, { attributes: true, attributeFilter: ['href'] });
+                if (host.document.body) observer.observe(host.document.body, { attributes: true, attributeFilter: ['class'] });
+                window.addEventListener('pagehide', function () { observer.disconnect(); });
+            } else {
+                window.addEventListener('storage', apply);
+                if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+            }
+        })();
+    </script>
 </head>
 <style>
+    :root {
+        --fd-bg: var(--bs-body-bg, #ffffff);
+        --fd-surface: var(--bs-tertiary-bg, #f8f9fa);
+        --fd-surface-strong: var(--bs-secondary-bg, #e9ecef);
+        --fd-border: var(--bs-border-color, #d8d8d8);
+        --fd-text: var(--bs-body-color, #212529);
+        --fd-muted: var(--bs-secondary-color, #6c757d);
+        --fd-hover: var(--bs-tertiary-bg, #eef4fb);
+        --fd-selected: var(--bs-primary-bg-subtle, #dceaf7);
+        --fd-selected-text: var(--bs-primary-text-emphasis, #0d6efd);
+        --fd-danger: var(--bs-danger-text-emphasis, #7a2020);
+        --fd-shadow: rgba(0, 0, 0, 0.2);
+        --fd-success-bg: var(--bs-success-bg-subtle, #eaf6ea);
+        --fd-success-border: var(--bs-success-border-subtle, #a6d2a6);
+        --fd-success-text: var(--bs-success-text-emphasis, #20521f);
+        --fd-warning-bg: var(--bs-warning-bg-subtle, #fff3cd);
+        --fd-warning-border: var(--bs-warning-border-subtle, #ffecb5);
+        --fd-warning-text: var(--bs-warning-text-emphasis, #664d03);
+    }
+
+    html, body {
+        background: var(--fd-bg);
+        color: var(--fd-text);
+    }
     body { font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; font-size: 13px; margin: 0; padding: 6px; }
     h3 { font-size: 14px; margin: 0 0 8px 0; }
-    .fdPanel { border: 1px solid #d8d8d8; margin-bottom: 12px; background: #fff; }
-    .fdPanelHead { background: #f4f4f4; border-bottom: 1px solid #e0e0e0; padding: 7px 10px;
+    .fdPanel { border: 1px solid var(--fd-border); margin-bottom: 12px; background: var(--fd-bg); }
+    .fdPanelHead { background: var(--fd-surface); border-bottom: 1px solid var(--fd-border); padding: 7px 10px;
                    font-weight: bold; display: flex; align-items: center; }
     .fdPanelHead .grow { flex: 1; }
     .fdPanelHead button { margin-left: 6px; }
@@ -24,92 +105,92 @@
     .fdRow.fdGrow { align-items: stretch; flex-wrap: nowrap; }
     .fdRow.fdGrow > .fdCol { display: flex; flex-direction: column; min-height: 0; }
     .fdCol { flex: 1; min-width: 180px; }
-    .fdCol label { display: block; color: #555; margin-bottom: 3px; }
-    input[type=text] { width: 100%; box-sizing: border-box; padding: 4px; }
+    .fdCol label { display: block; color: var(--fd-muted); margin-bottom: 3px; }
+    input[type=text] { width: 100%; box-sizing: border-box; padding: 4px; background: var(--fd-bg); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--bs-border-radius, 0.375rem); }
     button { padding: 4px 12px; cursor: pointer; }
     button:disabled { cursor: default; opacity: 0.5; }
 
     .fdPills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .fdPill { border: 1px solid #c4c4c4; border-radius: 12px; padding: 2px 10px; cursor: pointer; background: #fff; }
-    .fdPill.on { background: #1e6fd9; border-color: #1e6fd9; color: #fff; }
+    .fdPill { border: 1px solid var(--fd-border); border-radius: 12px; padding: 2px 10px; cursor: pointer; background: var(--fd-bg); }
+    .fdPill.on { background: var(--bs-primary, #0d6efd); border-color: var(--bs-primary, #0d6efd); color: var(--bs-white, #fff); }
     .fdPill .cnt { opacity: 0.75; margin-left: 5px; }
 
     .fdLists { display: flex; gap: 10px; align-items: stretch; }
-    .fdListBox { border: 1px solid #d8d8d8; overflow: auto; padding: 4px; min-height: 0; }
+    .fdListBox { border: 1px solid var(--fd-border); overflow: auto; padding: 4px; min-height: 0; background: var(--fd-bg); }
     #fdNodeBox { flex: 2; }
     #fdMeshBox, #fdTagBox { flex: 1; }
-    .fdListHead { font-weight: bold; color: #555; padding: 2px 4px 5px 4px; }
+    .fdListHead { font-weight: bold; color: var(--fd-muted); padding: 2px 4px 5px 4px; }
     .fdItem { display: block; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fdItem:hover { background: #eef4fb; }
+    .fdItem:hover { background: var(--fd-hover); }
     .fdDot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 5px; }
     .fdOn { background: #3c9a3c; } .fdOff { background: #b03030; }
-    .fdCount { color: #555; margin-left: 8px; }
+    .fdCount { color: var(--fd-muted); margin-left: 8px; }
 
-    #fdFileBox { border: 1px solid #d8d8d8; overflow: auto; min-height: 0; flex: 1; }
+    #fdFileBox { border: 1px solid var(--fd-border); overflow: auto; min-height: 0; flex: 1; }
     .fdFile { display: block; padding: 3px 5px; cursor: pointer; }
     .fdDir { padding: 3px 5px; white-space: nowrap; }
     .fdOvRow td { vertical-align: middle; }
     .fdOvDetail td { padding-top: 0; border-top: 0; }
-    .fdFail { color: #b03030; }
-    .fdMoving { color: #2f6fd0; }
-    .fdTw { display: inline-block; width: 12px; cursor: pointer; color: #666; user-select: none; }
+    .fdFail { color: var(--fd-danger); }
+    .fdMoving { color: var(--bs-primary, #0d6efd); }
+    .fdTw { display: inline-block; width: 12px; cursor: pointer; color: var(--fd-muted); user-select: none; }
     .fdFolder { cursor: pointer; }
     /* Whether a file is part of a distribution, shown at the right of its row. */
     .fdFile { display: flex; align-items: center; }
     .fdFn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
     .fdUse { margin-left: 8px; font-size: 11px; padding: 0 6px; border-radius: 8px; white-space: nowrap; }
-    .fdUse.yes { background: #eaf6ea; border: 1px solid #a6d2a6; color: #20521f; }
-    .fdUse.no { color: #999; }
-    .fdUseHead { float: right; color: #666; font-weight: normal; margin-right: 6px; }
+    .fdUse.yes { background: var(--fd-success-bg); border: 1px solid var(--fd-success-border); color: var(--fd-success-text); }
+    .fdUse.no { color: var(--fd-muted); }
+    .fdUseHead { float: right; color: var(--fd-muted); font-weight: normal; margin-right: 6px; }
     .fdFolder:hover { text-decoration: underline; }
-    .fdFile:hover { background: #eef4fb; }
-    .fdFile.sel { background: #dceaf7; font-weight: bold; }
+    .fdFile:hover { background: var(--fd-hover); }
+    .fdFile.sel { background: var(--fd-selected); font-weight: bold; }
 
     .fdRecentWrap { margin-top: 6px; }
-    .fdRecentLbl { color: #666; margin-right: 4px; }
-    .fdRecentChip { display: inline-block; border: 1px solid #dcdcdc; border-radius: 9px; padding: 0 8px;
-                    margin: 3px 4px 0 0; background: #fafafa; cursor: pointer; font-family: Consolas, monospace; }
-    .fdRecentChip:hover { background: #eef4fb; }
+    .fdRecentLbl { color: var(--fd-muted); margin-right: 4px; }
+    .fdRecentChip { display: inline-block; border: 1px solid var(--fd-border); border-radius: 9px; padding: 0 8px;
+                    margin: 3px 4px 0 0; background: var(--fd-surface); cursor: pointer; font-family: Consolas, monospace; }
+    .fdRecentChip:hover { background: var(--fd-hover); }
 
     table.fdOv { width: 100%; border-collapse: collapse; }
-    table.fdOv th { text-align: left; padding: 5px 6px; border-bottom: 2px solid #b3b3b3; position: sticky; top: 0; background: #fff; }
-    table.fdOv td { padding: 4px 6px; border-bottom: 1px solid #e4e4e4; vertical-align: top; word-break: break-all; }
+    table.fdOv th { text-align: left; padding: 5px 6px; border-bottom: 2px solid var(--fd-border); position: sticky; top: 0; background: var(--fd-bg); }
+    table.fdOv td { padding: 4px 6px; border-bottom: 1px solid var(--fd-border); vertical-align: top; word-break: break-all; }
     .fdMono { font-family: Consolas, monospace; }
-    .fdMuted { color: #666; }
+    .fdMuted { color: var(--fd-muted); }
     .fdNodeChips { margin-top: 4px; }
-    .fdChip { display: inline-block; border: 1px solid #dcdcdc; border-radius: 9px;
-              padding: 0 3px 0 7px; margin: 2px 3px 0 0; background: #fafafa; }
+    .fdChip { display: inline-block; border: 1px solid var(--fd-border); border-radius: 9px;
+              padding: 0 3px 0 7px; margin: 2px 3px 0 0; background: var(--fd-surface); }
     /* Delivery state of one device, confirmed by its agent. */
-    .fdChip.st-delivered { background: #eaf6ea; border-color: #a6d2a6; }
-    .fdChip.st-sending   { background: #eaf1fb; border-color: #a9c6ea; }
+    .fdChip.st-delivered { background: var(--fd-success-bg); border-color: var(--fd-success-border); }
+    .fdChip.st-sending   { background: var(--bs-primary-bg-subtle, #eaf1fb); border-color: var(--bs-primary-border-subtle, #a9c6ea); }
     /* A chip being sent fills with the delivered colour from the left, so the
        same element shows both what is happening and how far it has got. */
     .fdChip.st-sending.fdFill { background-image: linear-gradient(to right,
-        #cfeacf var(--fdpct, 0%), rgba(0,0,0,0) var(--fdpct, 0%)); background-repeat: no-repeat; }
-    .fdPct { margin-left: 5px; color: #2f6fd0; font-size: 11px; }
-    .fdChip.st-failed    { background: #fdeeee; border-color: #e0b4b4; }
-    .fdChip.st-pending   { background: #fafafa; }
+        rgba(60, 154, 60, 0.45) var(--fdpct, 0%), rgba(0,0,0,0) var(--fdpct, 0%)); background-repeat: no-repeat; }
+    .fdPct { margin-left: 5px; color: var(--bs-primary, #2f6fd0); font-size: 11px; }
+    .fdChip.st-failed    { background: var(--bs-danger-bg-subtle, #fdeeee); border-color: var(--bs-danger-border-subtle, #e0b4b4); }
+    .fdChip.st-pending   { background: var(--fd-surface); }
     .fdDot2 { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
     .st-delivered .fdDot2 { background: #3c9a3c; }
     .st-sending   .fdDot2 { background: #2f6fd0; }
     .st-failed    .fdDot2 { background: #b03030; }
     .st-pending   .fdDot2 { background: #bdbdbd; }
-    .fdLegend { color: #666; margin-left: 10px; font-weight: normal; }
-    .fdChip .x { cursor: pointer; color: #b03030; font-weight: bold; margin-left: 5px; padding: 0 2px; }
+    .fdLegend { color: var(--fd-muted); margin-left: 10px; font-weight: normal; }
+    .fdChip .x { cursor: pointer; color: var(--fd-danger); font-weight: bold; margin-left: 5px; padding: 0 2px; }
     .fdChip .x:hover { text-decoration: underline; }
 
     #fdOverlay { display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0;
                  background: rgba(0,0,0,0.35); z-index: 1000; }
     #fdDlg { position: absolute; left: 50%; top: 40px; transform: translateX(-50%);
-             background: #fff; border: 1px solid #808080; min-width: 420px; max-width: 90%; }
-    #fdDlgHead { background: #f0f0f0; border-bottom: 1px solid #d0d0d0; padding: 7px 10px; font-weight: bold; }
+             background: var(--fd-bg); border: 1px solid var(--fd-border); min-width: 420px; max-width: 90%; }
+    #fdDlgHead { background: var(--fd-surface); border-bottom: 1px solid var(--fd-border); padding: 7px 10px; font-weight: bold; }
     #fdDlgBody { padding: 10px; max-height: 60vh; overflow: auto; }
-    #fdDlgFoot { padding: 8px 10px; text-align: right; border-top: 1px solid #e0e0e0; }
+    #fdDlgFoot { padding: 8px 10px; text-align: right; border-top: 1px solid var(--fd-border); }
     #fdDlgFoot button { margin-left: 6px; }
-    #fdErr { color: #7a2020; padding: 6px 10px; display: none; }
+    #fdErr { color: var(--fd-danger); padding: 6px 10px; display: none; }
     #fdMsg { padding: 8px 10px; margin-bottom: 10px; display: none; }
-    .okMsg { background: #f0f7f0; border: 1px solid #b4d8b4; color: #20521f; }
-    .errMsg { background: #fdf0f0; border: 1px solid #e0b4b4; color: #7a2020; }
+    .okMsg { background: var(--bs-success-bg-subtle, #f0f7f0); border: 1px solid var(--bs-success-border-subtle, #b4d8b4); color: var(--bs-success-text-emphasis, #20521f); }
+    .errMsg { background: var(--bs-danger-bg-subtle, #fdf0f0); border: 1px solid var(--bs-danger-border-subtle, #e0b4b4); color: var(--bs-danger-text-emphasis, #7a2020); }
 </style>
 <body onload="fdInit();">
 
