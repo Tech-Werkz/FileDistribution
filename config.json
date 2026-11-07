@@ -3,7 +3,7 @@
   "shortName": "filedist",
   "version": "1.0.0",
   "author": "Ryan Blenis; fork maintained by Avtomax88",
-  "description": "",
+  "description": "Distribute Files / Sync Files to devices",
   "hasAdminPanel": true,
   "homepage": "https://github.com/Tech-Werkz/FileDistribution",
   "changelogUrl": "https://raw.githubusercontent.com/Tech-Werkz/FileDistribution/main/changelog.md",
